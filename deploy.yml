@@ -1,0 +1,76 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: trow-garbage-collector-sa
+  namespace: trow
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: trow-garbage-collector-r
+  namespace: trow
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+  - apiGroups: [""]
+    resources:
+      - pods/exec
+    verbs:
+      - create
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: trow-garbage-collector-rb
+  namespace: trow
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: trow-garbage-collector-r
+subjects:
+  - kind: ServiceAccount
+    name: trow-garbage-collector-sa
+    namespace: trow
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: trow-garbage-collector
+  name: trow-garbage-collector
+  namespace: trow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trow-garbage-collector
+  template:
+    metadata:
+      labels:
+        app: trow-garbage-collector
+    spec:
+      serviceAccountName: trow-garbage-collector-sa
+      securityContext:
+        runAsUser: 405
+        runAsGroup: 65533
+      containers:
+        - image: compumike/trow-garbage-collector:latest
+          imagePullPolicy: Always
+          name: main
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "50m"
