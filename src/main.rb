@@ -250,17 +250,10 @@ class TrowGarbageCollector
 
     puts_df_data
   end
-
-  def main_loop
-    OptionParser.new { |opts|
-    }.parse!
-
-    @log.info("Starting main_loop with #{POLL_INTERVAL}s polling interval.")
-    loop do
-      garbage_collect(dry_run: false) # FIXME
-      sleep(POLL_INTERVAL)
-    end
-  end
 end
 
-TrowGarbageCollector.new.main_loop if $PROGRAM_NAME == __FILE__
+loop do
+  puts "Starting main_loop with #{TrowGarbageCollector::POLL_INTERVAL}s polling interval."
+  TrowGarbageCollector.new.garbage_collect(dry_run: false)
+  sleep(TrowGarbageCollector::POLL_INTERVAL)
+end if $PROGRAM_NAME == __FILE__
