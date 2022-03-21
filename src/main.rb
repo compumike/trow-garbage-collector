@@ -105,7 +105,7 @@ class TrowGarbageCollector
     raise "Error: #{result.status}" unless result.status.success?
 
     result.stdout.strip.split("\n").each do |line|
-      line_sp = line.gsub(/\s+/, " ").split(" ")
+      line_sp = line.gsub(/\s+/, " ").split
       raise "Bad line '#{line_sp}'" unless line_sp.count == 3
 
       fsize, fmtime, fname = line_sp
@@ -137,7 +137,7 @@ class TrowGarbageCollector
     contents.each do |line|
       next unless line.start_with?("sha256:")
 
-      hash = line[7...].split(" ")[0]
+      hash = line[7...].split[0]
       raise "Bad hash #{hash}" unless /\A[0-9a-f]{64}\z/.match?(hash)
 
       @repo.set_manifest_blob(name: manifest_name, blob: hash)
