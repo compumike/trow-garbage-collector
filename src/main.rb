@@ -116,7 +116,7 @@ class TrowGarbageCollector
     @_manifest_tmpdir = File.join("/dev/shm", SecureRandom.hex)
     FileUtils.mkdir(@_manifest_tmpdir)
 
-    Open3.pipeline(["kubectl", "exec", "-n", TROW_NAMESPACE, TROW_POD, "--", "/bin/bash", "-c", "find /data/manifests/ -type f -print0 | xargs -0 tar -cf -"],
+    Open3.pipeline(["kubectl", "exec", "-n", TROW_NAMESPACE, TROW_POD, "--", "/bin/bash", "-c", "find /data/manifests/ -type f -print0 | xargs --no-run-if-empty -0 tar -cf -"],
       ["tar", "-C", @_manifest_tmpdir, "-xf", "-"])
   end
 
