@@ -92,7 +92,7 @@ class TrowGarbageCollector
   end
 
   def fetch_file_sizes
-    result = trow_exec("/bin/bash", "-c", "find /data/ -type f -print0 | xargs -0 -n 1 stat -c '%s %Y %n'")
+    result = trow_exec("/bin/bash", "-c", "find /data/ -type f -print0 | xargs --no-run-if-empty -0 -n 1 stat -c '%s %Y %n'")
     raise "Error: #{result.status}" unless result.status.success?
 
     result.stdout.strip.split("\n").each do |line|
