@@ -59,8 +59,10 @@ class Repository
     puts "Blobs: #{@blobs.count}"
     puts "Total size: #{@blobs.values.map(&:size).sum} bytes"
     puts "Manifests: #{@manifests.count}"
-    puts "Orphaned blobs: #{orphaned_blobs.count}"
-    puts "Orphaned blob total size: #{orphaned_blobs.values.map(&:size).sum} bytes"
+    orphaned_blobs.tap do |filtered_blobs|
+      puts "Orphaned blobs: #{filtered_blobs.count}"
+      puts "Orphaned blob total size: #{filtered_blobs.values.map(&:size).sum} bytes"
+    end
   end
 
   private
