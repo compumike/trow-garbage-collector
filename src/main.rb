@@ -147,12 +147,9 @@ class TrowGarbageCollector
 
   def parse_manifests
     Dir.glob(File.join(@_manifest_tmpdir, "**/*")).filter { |fn| File.file?(fn) }.each do |filename|
-      if filename.start_with?(@_manifest_tmpdir)
-        manifest_name = filename[@_manifest_tmpdir.length...]
-      else
-        raise "Weird filename #{filename}"
-      end
+      raise "Weird filename #{filename}" unless filename.start_with?(@_manifest_tmpdir)
 
+      manifest_name = filename[@_manifest_tmpdir.length...]
       raise "Weird manifest name #{manifest_name}" unless manifest_name.start_with?("/data/manifests/")
 
       parse_manifest(manifest_name: manifest_name, contents: File.read(filename))
