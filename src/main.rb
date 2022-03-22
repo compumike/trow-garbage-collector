@@ -49,9 +49,11 @@ class Repository
     blobdata.mentioned_by << from
   end
 
-  def orphaned_blobs(min_age: MIN_GC_BLOB_AGE)
-    time_cutoff = Time.now - min_age
-    @blobs.filter { |k, v| v.mentioned_by.empty? && v.mtime < time_cutoff }
+  def filenames_to_delete(dry_run:, min_age: MIN_GC_BLOB_AGE)
+    orphaned_blobs(min_age: min_age).tap do |filtered_blobs|
+      yield filtered_blobs.values.map(&:filename)
+      @blobs.delete_if { |k, _v| filtered_blobs.key?(k) } unless dry_run
+    end
   end
 
   def puts_summary
@@ -60,6 +62,13 @@ class Repository
     puts "Manifests: #{@manifests.count}"
     puts "Orphaned blobs: #{orphaned_blobs.count}"
     puts "Orphaned blob total size: #{orphaned_blobs.values.map(&:size).sum} bytes"
+  end
+
+  private
+
+  def orphaned_blobs(min_age: MIN_GC_BLOB_AGE)
+    time_cutoff = Time.now - min_age
+    @blobs.filter { |k, v| v.mentioned_by.empty? && v.mtime < time_cutoff }
   end
 end
 
@@ -206,25 +215,16 @@ class TrowGarbageCollector
 
   def delete_orphaned_blobs(dry_run: false)
     @log.info "Deleting orphaned blobs..."
-    filenames_to_delete = @repo.orphaned_blobs.values.map(&:filename)
-    if filenames_to_delete.empty?
-      @log.info "No files to delete. Skipping."
-      return
+    @repo.filenames_to_delete(dry_run: dry_run) do |filenames|
+      if filenames.empty?
+        @log.info "No files to delete. Skipping."
+        break
+      end
+      result = trow_exec("/bin/bash", "-c", delete_cmd(dry_run: dry_run), stdin_data: filenames.join("\0"))
+      raise "Error: #{result.status}" unless result.status.success?
+
+      puts result.stdout
     end
-
-    stdin_data = filenames_to_delete.join("\0")
-
-    if dry_run
-      @log.info("DRY RUN -- not actually deleting")
-      cmd = "xargs -0 -n 1 stat -c '%s %Y %n'"
-    else
-      cmd = "xargs -0 -n 1 rm"
-    end
-
-    result = trow_exec("/bin/bash", "-c", cmd, stdin_data: stdin_data)
-    raise "Error: #{result.status}" unless result.status.success?
-
-    puts result.stdout
   end
 
   def garbage_collect(dry_run: false)
@@ -260,6 +260,17 @@ class TrowGarbageCollector
       garbage_collect(dry_run: false) # FIXME
       sleep(POLL_INTERVAL)
     end
+  end
+
+  private
+
+  def delete_cmd(dry_run:)
+    cmd = "rm"
+    if dry_run
+      @log.info("DRY RUN -- not actually deleting")
+      cmd = "stat -c '%s %Y %n'"
+    end
+    "xargs -0 -n 1 #{cmd}"
   end
 end
 
