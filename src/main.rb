@@ -81,6 +81,7 @@ class TrowGarbageCollector
     STDOUT.sync = true
     @log = Logger.new(STDOUT)
     @repo = Repository.new(log: @log)
+    @dry_run = (ENV.fetch("DRY_RUN", "false") =~ /^(true|y|yes|1)$/i)
   end
 
   def trow_exec(*cmd_array, stdin_data: nil)
@@ -210,7 +211,7 @@ class TrowGarbageCollector
     FileUtils.rm_r(@_jsons_tmpdir)
   end
 
-  def delete_orphaned_blobs(dry_run: false)
+  def delete_orphaned_blobs
     @log.info "Deleting orphaned blobs..."
     @repo.filenames_to_delete(dry_run: dry_run) do |filenames|
       if filenames.empty?
@@ -224,7 +225,7 @@ class TrowGarbageCollector
     end
   end
 
-  def garbage_collect(dry_run: false)
+  def garbage_collect
     puts_df_data
 
     # PHASE 1: Look at /data/blobs/ and /data/manifests/
@@ -243,7 +244,7 @@ class TrowGarbageCollector
     @repo.puts_summary
 
     # PHASE 4: Actually delete orphaned blobs
-    delete_orphaned_blobs(dry_run: dry_run)
+    delete_orphaned_blobs
 
     puts_df_data
   end
@@ -254,12 +255,14 @@ class TrowGarbageCollector
 
     @log.info("Starting main_loop with #{POLL_INTERVAL}s polling interval.")
     loop do
-      garbage_collect(dry_run: false) # FIXME
+      garbage_collect
       sleep(POLL_INTERVAL)
     end
   end
 
   private
+
+  attr_reader :dry_run
 
   def delete_cmd(dry_run:)
     cmd = "rm"
