@@ -56,8 +56,8 @@ class Repository
   end
 
   def puts_summary
-    puts "Blobs: #{@blobs.count}"
-    puts "Total size: #{@blobs.values.map(&:size).sum} bytes"
+    puts "Blobs: #{humanize(@blobs.count)}"
+    puts "Total size: #{humanize(@blobs.values.map(&:size).sum)} bytes"
     puts "Manifests: #{@manifests.count}"
     orphaned_blobs.tap do |filtered_blobs|
       puts "Orphaned blobs: #{filtered_blobs.count}"
@@ -70,6 +70,10 @@ class Repository
   def orphaned_blobs(min_age: MIN_GC_BLOB_AGE)
     time_cutoff = Time.now - min_age
     @blobs.filter { |k, v| v.mentioned_by.empty? && v.mtime < time_cutoff }
+  end
+
+  def humanize(number)
+    number.to_s.reverse.gsub(/...(?=.)/, '\&,').reverse
   end
 end
 
