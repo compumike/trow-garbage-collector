@@ -5,7 +5,6 @@ require "fileutils"
 require "json"
 require "logger"
 require "open3"
-require "optparse"
 require "ostruct"
 require "securerandom"
 require "set"
@@ -250,9 +249,6 @@ class TrowGarbageCollector
   end
 
   def main_loop
-    OptionParser.new { |opts|
-    }.parse!
-
     @log.info("Starting main_loop with #{POLL_INTERVAL}s polling interval.")
     loop do
       garbage_collect
